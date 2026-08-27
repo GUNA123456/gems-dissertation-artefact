@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pyc
+**/Papers_Markdown/
+.DS_Store
+~$*
+*.bak
+*.bak-*

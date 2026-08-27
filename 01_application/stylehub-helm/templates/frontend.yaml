@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    app: {{ .Release.Name }}-frontend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-frontend
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ .Values.microservices.frontend.port }}"
+      labels:
+        app: {{ .Release.Name }}-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.image.repositoryPrefix }}/frontend:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.frontend.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.frontend.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          ports:
+            - containerPort: {{ .Values.microservices.frontend.port }}
+          env:
+            {{- if .Values.otel.endpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
+            {{- end }}
+            - name: PRODUCT_CATALOG_SERVICE_URL
+              value: "http://{{ .Release.Name }}-product-catalog-service.default.svc.cluster.local:{{ .Values.microservices.productCatalog.port }}"
+            - name: CART_SERVICE_URL
+              value: "http://{{ .Release.Name }}-cart-service.default.svc.cluster.local:{{ .Values.microservices.cart.port }}"
+            - name: CURRENCY_SERVICE_URL
+              value: "http://{{ .Release.Name }}-currency-service.default.svc.cluster.local:{{ .Values.microservices.currency.port }}"
+            - name: RECOMMENDATION_SERVICE_URL
+              value: "http://{{ .Release.Name }}-recommendation-service.default.svc.cluster.local:{{ .Values.microservices.recommendation.port }}"
+            - name: AD_SERVICE_URL
+              value: "http://{{ .Release.Name }}-ad-service.default.svc.cluster.local:{{ .Values.microservices.ad.port }}"
+            - name: CHECKOUT_SERVICE_URL
+              value: "http://{{ .Release.Name }}-checkout-service.default.svc.cluster.local:{{ .Values.microservices.checkout.port }}"
+            # Without this the frontend falls back to http://localhost:8085 for shipping, so the
+            # cart page's shipping quote silently fails and the frontend->shipping edge never
+            # appears in the discovered dependency graph.
+            - name: SHIPPING_SERVICE_URL
+              value: "http://{{ .Release.Name }}-shipping-service.default.svc.cluster.local:{{ .Values.microservices.shipping.port }}"
+            # depgraph.py labels every dependency edge it publishes with SERVICE_NAME. It must
+            # match NODE_MAP in extract_telemetry.py exactly; if unset, the service reports
+            # source="unknown" and its edges are dropped from the discovered topology.
+            - name: SERVICE_NAME
+              value: "{{ .Release.Name }}-frontend"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-frontend
+spec:
+  type: {{ .Values.service.frontendType }}
+  selector:
+    app: {{ .Release.Name }}-frontend
+  ports:
+    - port: 80
+      targetPort: {{ .Values.microservices.frontend.port }}
+      nodePort: {{ .Values.service.frontendNodePort }}

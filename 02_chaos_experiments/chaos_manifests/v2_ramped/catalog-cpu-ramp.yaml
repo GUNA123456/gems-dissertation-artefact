@@ -1,0 +1,85 @@
+# v2 ramped fault: progressive CPU stress on product-catalog-service.
+#
+# Round 1 faults were step functions (0 -> full stress in one hit), so the first
+# anomalous sample was already the failure — no precursor window existed for the
+# model to learn lead time from. This workflow ramps intensity over four 5-minute
+# stages (~10 scrapes each at 30s), so degradation appears in the catalog's own
+# latency first and propagates to frontend/checkout/recommendation before any
+# error fires.
+#
+# Blast radius: catalog has the highest fan-in in the graph (frontend, checkout,
+# recommendation all depend on it) — the richest multi-edge cascade available.
+# Terminal stage is 3 workers at 100% on a 4-vCPU single-node cluster: heavy but
+# deliberately not node-saturating.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: catalog-cpu-ramp
+  namespace: default
+spec:
+  entry: ramp
+  templates:
+    - name: ramp
+      templateType: Serial
+      deadline: 21m
+      children:
+        - cpu-stage-1
+        - cpu-stage-2
+        - cpu-stage-3
+        - cpu-stage-4
+    - name: cpu-stage-1
+      templateType: StressChaos
+      deadline: 5m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 1
+            load: 30
+    - name: cpu-stage-2
+      templateType: StressChaos
+      deadline: 5m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 1
+            load: 70
+    - name: cpu-stage-3
+      templateType: StressChaos
+      deadline: 5m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 2
+            load: 90
+    - name: cpu-stage-4
+      templateType: StressChaos
+      deadline: 5m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 3
+            load: 100

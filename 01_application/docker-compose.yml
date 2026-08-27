@@ -1,0 +1,96 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PRODUCT_CATALOG_URL=http://product-catalog-service:8081
+      - CART_URL=http://cart-service:8082
+      - CURRENCY_URL=http://currency-service:8083
+      - RECOMMENDATION_URL=http://recommendation-service:8084
+      - AD_URL=http://ad-service:8087
+      - CHECKOUT_URL=http://checkout-service:8086
+    depends_on:
+      - product-catalog-service
+      - cart-service
+
+  product-catalog-service:
+    build:
+      context: ./src/product_catalog_service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+
+  cart-service:
+    build:
+      context: ./src/cart_service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  currency-service:
+    build:
+      context: ./src/currency_service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+
+  recommendation-service:
+    build:
+      context: ./src/recommendation_service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+
+  shipping-service:
+    build:
+      context: ./src/shipping_service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+
+  checkout-service:
+    build:
+      context: ./src/checkout_service
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      - CART_SERVICE_ADDR=http://cart-service:8082
+      - SHIPPING_SERVICE_ADDR=http://shipping-service:8085
+      - PAYMENT_SERVICE_ADDR=http://payment-service:8089
+      - EMAIL_SERVICE_ADDR=http://email-service:8088
+      - PRODUCT_CATALOG_SERVICE_ADDR=http://product-catalog-service:8081
+
+  ad-service:
+    build:
+      context: ./src/ad_service
+      dockerfile: Dockerfile
+    ports:
+      - "8087:8087"
+
+  email-service:
+    build:
+      context: ./src/email_service
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+
+  payment-service:
+    build:
+      context: ./src/payment_service
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"

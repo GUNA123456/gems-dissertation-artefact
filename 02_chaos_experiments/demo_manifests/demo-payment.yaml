@@ -1,0 +1,77 @@
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: payment-delay-ramp
+  namespace: default
+spec:
+  entry: ramp
+  templates:
+    - name: ramp
+      templateType: Serial
+      deadline: 13m
+      children:
+        - delay-stage-1
+        - delay-stage-2
+        - delay-stage-3
+        - delay-stage-4
+    - name: delay-stage-1
+      templateType: NetworkChaos
+      deadline: 3m
+      networkChaos:
+        action: delay
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-payment-service
+        delay:
+          latency: '100ms'
+          jitter: '20ms'
+          correlation: '25'
+    - name: delay-stage-2
+      templateType: NetworkChaos
+      deadline: 3m
+      networkChaos:
+        action: delay
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-payment-service
+        delay:
+          latency: '300ms'
+          jitter: '50ms'
+          correlation: '25'
+    - name: delay-stage-3
+      templateType: NetworkChaos
+      deadline: 3m
+      networkChaos:
+        action: delay
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-payment-service
+        delay:
+          latency: '800ms'
+          jitter: '100ms'
+          correlation: '25'
+    - name: delay-stage-4
+      templateType: NetworkChaos
+      deadline: 3m
+      networkChaos:
+        action: delay
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-payment-service
+        delay:
+          latency: '1100ms'
+          jitter: '80ms'
+          correlation: '25'

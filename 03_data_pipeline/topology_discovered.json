@@ -1,0 +1,81 @@
+{
+  "nodes": [
+    "stylehub-frontend",
+    "stylehub-ad-service",
+    "stylehub-cart-service",
+    "stylehub-checkout-service",
+    "stylehub-currency-service",
+    "stylehub-email-service",
+    "stylehub-payment-service",
+    "stylehub-product-catalog-service",
+    "stylehub-recommendation-service",
+    "stylehub-shipping-service",
+    "stylehub-redis"
+  ],
+  "edge_index": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      0,
+      3
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      0,
+      7
+    ],
+    [
+      0,
+      8
+    ],
+    [
+      0,
+      9
+    ],
+    [
+      2,
+      10
+    ],
+    [
+      3,
+      2
+    ],
+    [
+      3,
+      5
+    ],
+    [
+      3,
+      6
+    ],
+    [
+      3,
+      9
+    ]
+  ],
+  "edge_weights": [
+    94.0,
+    188.0,
+    6.0,
+    0.0,
+    304.0,
+    20.0,
+    39.0,
+    258.0,
+    10.0,
+    5.0,
+    5.0,
+    5.0
+  ],
+  "window": "20m",
+  "source": "discovered from service_dependency_calls_total"
+}

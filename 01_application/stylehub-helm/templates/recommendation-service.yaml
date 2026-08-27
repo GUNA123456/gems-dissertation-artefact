@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-recommendation-service
+  labels:
+    app: {{ .Release.Name }}-recommendation-service
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-recommendation-service
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ .Values.microservices.recommendation.port }}"
+      labels:
+        app: {{ .Release.Name }}-recommendation-service
+    spec:
+      containers:
+        - name: recommendation-service
+          image: "{{ .Values.image.repositoryPrefix }}/recommendation-service:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.recommendation.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.recommendation.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          env:
+            # Phase 2: recommendation->catalog edge — recommendations now come from the
+            # live catalog, so this stub finally has (and needs) a real dependency.
+            - name: PRODUCT_CATALOG_SERVICE_URL
+              value: "http://{{ .Release.Name }}-product-catalog-service.default.svc.cluster.local:{{ .Values.microservices.productCatalog.port }}"
+            {{- if .Values.otel.endpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.microservices.recommendation.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-recommendation-service
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Release.Name }}-recommendation-service
+  ports:
+    - port: {{ .Values.microservices.recommendation.port }}
+      targetPort: {{ .Values.microservices.recommendation.port }}

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-cart-service
+  labels:
+    app: {{ .Release.Name }}-cart-service
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cart-service
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ .Values.microservices.cart.port }}"
+      labels:
+        app: {{ .Release.Name }}-cart-service
+    spec:
+      containers:
+        - name: cart-service
+          image: "{{ .Values.image.repositoryPrefix }}/cart-service:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.cart.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.cart.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          env:
+            {{- if .Values.otel.endpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
+            {{- end }}
+            - name: REDIS_HOST
+              value: "{{ .Release.Name }}-redis"
+            - name: REDIS_PORT
+              value: "{{ .Values.redis.port }}"
+            # Required by depgraph.py — must match NODE_MAP in extract_telemetry.py, otherwise
+            # this service's edges (including cart->redis) are published as source="unknown"
+            # and dropped during topology discovery.
+            - name: SERVICE_NAME
+              value: "{{ .Release.Name }}-cart-service"
+          ports:
+            - containerPort: {{ .Values.microservices.cart.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-cart-service
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Release.Name }}-cart-service
+  ports:
+    - port: {{ .Values.microservices.cart.port }}
+      targetPort: {{ .Values.microservices.cart.port }}

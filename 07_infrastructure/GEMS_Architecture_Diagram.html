@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEMS Sandbox Architecture & Deployment Topology</title>
+
+  <!-- Google Fonts: Inter & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ===========================================
+         DESIGN SYSTEM & VARIABLES (LIGHT THEME)
+         =========================================== */
+    :root {
+      --bg-light: #f8fafc;
+      --bg-panel: #ffffff;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+
+      /* Vibrant Accents */
+      --azure-blue: #0078d4;
+      --k8s-blue: #1b51c5;
+      --gems-orange: #f95738;
+      --monitoring-green: #10b981;
+      --chaos-pink: #d946ef;
+
+      /* Text Colors */
+      --text-main: #0f172a;
+      --text-muted: #475569;
+
+      /* Fonts */
+      --font-header: "Space Grotesk", sans-serif;
+      --font-body: "Inter", sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      padding: 2rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    h1 {
+      font-family: var(--font-header);
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #0f172a 40%, var(--gems-orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .description {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    /* ===========================================
+         INTERACTIVE CONTROL BAR
+         =========================================== */
+    .control-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      background: var(--bg-panel);
+      padding: 0.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn.active {
+      color: var(--text-main);
+    }
+
+    .btn-all.active {
+      background: #e2e8f0;
+    }
+
+    .btn-traffic.active {
+      background: rgba(249, 87, 56, 0.1);
+      color: var(--gems-orange);
+    }
+
+    .btn-telemetry.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--monitoring-green);
+    }
+
+    .btn-chaos.active {
+      background: rgba(217, 70, 239, 0.1);
+      color: var(--chaos-pink);
+    }
+
+    /* ===========================================
+         DIAGRAM CANVAS
+         =========================================== */
+    .canvas {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Layer 1: Azure Virtual Machine */
+    .azure-vm {
+      background: var(--bg-panel);
+      border: 3px solid var(--azure-blue);
+      border-radius: 20px;
+      padding: 2.5rem 2rem 2rem 2rem;
+      box-shadow: 0 10px 30px rgba(0, 120, 212, 0.05);
+      position: relative;
+    }
+
+    .layer-tag {
+      position: absolute;
+      top: -14px;
+      left: 20px;
+      background: var(--azure-blue);
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--font-header);
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 10px rgba(0, 120, 212, 0.2);
+    }
+
+    .vm-details {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.8rem;
+    }
+
+    /* Layer 2: k3s Kubernetes Cluster */
+    .k8s-cluster {
+      border: 3px dashed var(--k8s-blue);
+      border-radius: 16px;
+      padding: 1.8rem 1.5rem 1.5rem 1.5rem;
+      background: #f1f5f9;
+      position: relative;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    .k8s-cluster>.layer-tag {
+      background: var(--k8s-blue);
+      box-shadow: 0 4px 10px rgba(27, 81, 197, 0.2);
+    }
+
+    /* Namespaces Layout */
+    .namespaces-container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .namespaces-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .namespace-block {
+      border: 2px solid var(--border-color);
+      background: var(--bg-panel);
+      border-radius: 12px;
+      padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .namespace-title {
+      font-family: var(--font-header);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    /* Specific Namespace Themes (Colorful Blocks) */
+    .ns-default {
+      border-color: var(--gems-orange);
+      background: #fffaf8;
+    }
+
+    .ns-default .namespace-title {
+      color: var(--gems-orange);
+    }
+
+    .ns-monitoring {
+      border-color: var(--monitoring-green);
+      background: #f4fdf8;
+    }
+
+    .ns-monitoring .namespace-title {
+      color: var(--monitoring-green);
+    }
+
+    .ns-chaos {
+      border-color: var(--chaos-pink);
+      background: #fdf4fd;
+    }
+
+    .ns-chaos .namespace-title {
+      color: var(--chaos-pink);
+    }
+
+    /* ===========================================
+         SERVICE CARDS & CONTAINER PODS
+         =========================================== */
+    .pods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .pod-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.8rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
+
+    .pod-card h4 {
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      color: var(--text-main);
+      word-break: break-all;
+      font-weight: 600;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      background-color: var(--monitoring-green);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      box-shadow: 0 0 6px var(--monitoring-green);
+    }
+
+    .pod-role {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Namespace-specific Pod Left Borders */
+    .ns-default .pod-card {
+      border-left: 3px solid var(--gems-orange);
+    }
+
+    .ns-monitoring .pod-card {
+      border-left: 3px solid var(--monitoring-green);
+    }
+
+    .ns-chaos .pod-card {
+      border-left: 3px solid var(--chaos-pink);
+    }
+
+    /* Hover effects */
+    .pod-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(15, 23, 42, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    /* Target indicators for chaos */
+    .pod-card.chaos-target::after {
+      content: "🔥 Target";
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--chaos-pink);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      box-shadow: 0 2px 6px rgba(217, 70, 239, 0.2);
+    }
+
+    /* ===========================================
+         FLOW PATH HIGHLIGHTS (COLORFUL VISUALIZATION)
+         =========================================== */
+
+    /* Standard Traffic Path */
+    .flow-traffic .path-traffic {
+      border-color: var(--gems-orange) !important;
+      background: #fff3ed !important;
+      box-shadow: 0 4px 15px rgba(249, 87, 56, 0.06);
+    }
+
+    .flow-traffic .pod-frontend {
+      border-color: var(--gems-orange) !important;
+      box-shadow: 0 0 12px rgba(249, 87, 56, 0.25);
+    }
+
+    /* Telemetry Scrape Paths */
+    .flow-telemetry .path-telemetry {
+      border-color: var(--monitoring-green) !important;
+      background: #eefdf4 !important;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.06);
+    }
+
+    .flow-telemetry .pod-prometheus {
+      border-color: var(--monitoring-green) !important;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+
+    /* Chaos Injection Target Paths */
+    .flow-chaos .path-chaos {
+      border-color: var(--chaos-pink) !important;
+      background: #fdf2fd !important;
+      box-shadow: 0 4px 15px rgba(217, 70, 239, 0.06);
+    }
+
+    .flow-chaos .pod-chaos-daemon {
+      border-color: var(--chaos-pink) !important;
+      box-shadow: 0 0 12px rgba(217, 70, 239, 0.25);
+    }
+
+    .flow-chaos .pod-card.chaos-target {
+      border-color: var(--chaos-pink) !important;
+      box-shadow: 0 0 12px rgba(217, 70, 239, 0.25);
+    }
+
+    .flow-chaos .pod-card.chaos-target::after {
+      opacity: 1;
+    }
+
+    /* System Blocks Layout */
+    .system-blocks {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* External Environment (Host computer) */
+    .external-stack {
+      background: #fff;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.2rem;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .external-stack h3 {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      font-family: var(--font-header);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.4rem;
+      display: inline-block;
+    }
+
+    .external-grid {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .external-card {
+      background: var(--bg-light);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.8rem 1.5rem;
+      font-size: 0.85rem;
+      text-align: left;
+      min-width: 250px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .external-card strong {
+      display: block;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .external-card span {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body class="flow-all">
+  <header>
+    <h1>GEMS Sandbox & Azure VM Topology</h1>
+    <p class="description">
+      Interactive blueprint of the experimental testbed. Displays the microservices (Default namespace),
+      monitoring stack (Prometheus & Grafana), and failure injection tooling (Chaos Mesh) deployed on the k3s cluster.
+    </p>
+  </header>
+
+  <!-- Interactive Filter Controls -->
+  <div class="control-bar">
+    <button class="btn btn-all active" onclick="setFlow('all')">
+      <span
+        style="display:inline-block; width:10px; height:10px; background:var(--text-muted); border-radius:50%;"></span>
+      Show All Deployed Components
+    </button>
+    <button class="btn btn-traffic" onclick="setFlow('traffic')">
+      <span
+        style="display:inline-block; width:10px; height:10px; background:var(--gems-orange); border-radius:50%;"></span>
+      Standard E-Commerce Web Traffic Flow
+    </button>
+    <button class="btn btn-telemetry" onclick="setFlow('telemetry')">
+      <span
+        style="display:inline-block; width:10px; height:10px; background:var(--monitoring-green); border-radius:50%;"></span>
+      Prometheus Telemetry Scrape Paths
+    </button>
+    <button class="btn btn-chaos" onclick="setFlow('chaos')">
+      <span
+        style="display:inline-block; width:10px; height:10px; background:var(--chaos-pink); border-radius:50%;"></span>
+      Chaos Mesh Fault Injection Paths
+    </button>
+  </div>
+
+  <!-- Main Visual Canvas -->
+  <div class="canvas">
+
+    <!-- Layer 1: Azure Virtual Machine -->
+    <div class="azure-vm">
+      <div class="layer-tag">Azure VM Instance</div>
+      <div class="vm-details">
+        <span><strong>Instance ID:</strong> Research-Project-01</span>
+        <span><strong>Instance Size:</strong> Standard_D2s_v3 (2 vCPUs, 8GB RAM)</span>
+        <span><strong>Access:</strong> single-tenant, address withheld</span>
+        <span><strong>OS Platform:</strong> Ubuntu 22.04 LTS</span>
+      </div>
+
+      <!-- Layer 2: k3s Kubernetes Cluster -->
+      <div class="k8s-cluster">
+        <div class="layer-tag">k3s Single-Node Kubernetes Cluster</div>
+
+        <div class="namespaces-container">
+
+          <!-- Namespace: default (GEMS Microservices) -->
+          <div class="namespace-block ns-default path-traffic path-telemetry">
+            <div class="namespace-title">
+              <span
+                style="width:10px; height:10px; background:var(--gems-orange); border-radius:50%; display:inline-block;"></span>
+              Namespace: default (GEMS Application Stack)
+            </div>
+
+            <div class="pods-grid">
+              <div class="pod-card pod-frontend path-traffic">
+                <div class="status-indicator"></div>
+                <h4>frontend</h4>
+                <div class="pod-role">NodePort 30080</div>
+              </div>
+              <div class="pod-card chaos-target">
+                <div class="status-indicator"></div>
+                <h4>productcatalog</h4>
+                <div class="pod-role">FastAPI Node</div>
+              </div>
+              <div class="pod-card chaos-target">
+                <div class="status-indicator"></div>
+                <h4>cartservice</h4>
+                <div class="pod-role">FastAPI Node</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>redis-cart</h4>
+                <div class="pod-role">Redis Cache</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>checkoutservice</h4>
+                <div class="pod-role">Orchestration</div>
+              </div>
+              <div class="pod-card chaos-target">
+                <div class="status-indicator"></div>
+                <h4>paymentservice</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+              <div class="pod-card chaos-target">
+                <div class="status-indicator"></div>
+                <h4>shippingservice</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>adservice</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>emailservice</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>recommendation</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+              <div class="pod-card">
+                <div class="status-indicator"></div>
+                <h4>currencyservice</h4>
+                <div class="pod-role">gRPC Node</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side Containers: Monitoring & Chaos -->
+          <div class="system-blocks">
+
+            <!-- Namespace: monitoring -->
+            <div class="namespace-block ns-monitoring path-telemetry">
+              <div class="namespace-title">
+                <span
+                  style="width:10px; height:10px; background:var(--monitoring-green); border-radius:50%; display:inline-block;"></span>
+                Namespace: monitoring
+              </div>
+              <div class="pods-grid" style="grid-template-columns: 1fr;">
+                <div class="pod-card pod-prometheus">
+                  <div class="status-indicator"></div>
+                  <h4>prometheus-server</h4>
+                  <div class="pod-role">NodePort 30900</div>
+                </div>
+                <div class="pod-card">
+                  <div class="status-indicator"></div>
+                  <h4>grafana</h4>
+                  <div class="pod-role">NodePort 30300</div>
+                </div>
+                <div class="pod-card">
+                  <div class="status-indicator"></div>
+                  <h4>kube-state-metrics</h4>
+                  <div class="pod-role">Exporter</div>
+                </div>
+                <div class="pod-card">
+                  <div class="status-indicator"></div>
+                  <h4>node-exporter</h4>
+                  <div class="pod-role">Exporter</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Namespace: chaos-mesh -->
+            <div class="namespace-block ns-chaos path-chaos">
+              <div class="namespace-title">
+                <span
+                  style="width:10px; height:10px; background:var(--chaos-pink); border-radius:50%; display:inline-block;"></span>
+                Namespace: chaos-mesh
+              </div>
+              <div class="pods-grid" style="grid-template-columns: 1fr;">
+                <div class="pod-card pod-chaos-daemon">
+                  <div class="status-indicator"></div>
+                  <h4>chaos-daemon</h4>
+                  <div class="pod-role">DaemonSet Node</div>
+                </div>
+                <div class="pod-card">
+                  <div class="status-indicator"></div>
+                  <h4>controller-mgr</h4>
+                  <div class="pod-role">CRD Controller</div>
+                </div>
+                <div class="pod-card">
+                  <div class="status-indicator"></div>
+                  <h4>chaos-dashboard</h4>
+                  <div class="pod-role">NodePort 31111</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- External Tools (Running Outside Cluster/Host Side) -->
+    <div class="external-stack">
+      <h3>External Execution Environment (User Host Computer / Local macOS)</h3>
+      <div class="external-grid">
+        <div class="external-card" style="border-top: 3px solid var(--gems-orange);">
+          <strong>Locust Load Runner</strong>
+          <span>Generates dynamic User Traffic Workload to Gateway (Port 30080)</span>
+        </div>
+        <div class="external-card" style="border-top: 3px solid var(--monitoring-green);">
+          <strong>Telemetry Extractor Script</strong>
+          <span>Queries and extracts Prometheus Telemetry API Metrics (Port 30900)</span>
+        </div>
+        <div class="external-card" style="border-top: 3px solid var(--k8s-blue);">
+          <strong>GCN-LSTM Model Training</strong>
+          <span>Executes GNN Model Training Loop Locally on Parsed Graph Adjacency Matrices</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive script to filter flows -->
+  <script>
+    function setFlow(flowType) {
+      // Remove existing flow classes
+      document.body.className = '';
+
+      // Add new class
+      document.body.classList.add('flow-' + flowType);
+
+      // Update button states
+      document.querySelectorAll('.control-bar .btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const activeBtn = document.querySelector('.control-bar .btn-' + (flowType === 'all' ? 'all' : flowType));
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+    }
+  </script>
+</body>
+
+</html>

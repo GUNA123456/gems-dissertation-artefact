@@ -1,0 +1,40 @@
+== 1. footer ==
+  reason='completed' episodes=20 clean=True pods=12/12
+== 2. census / statuses ==
+  episodes=20, non-completed=1
+   !! ep3 cart-mem-ramp -> partial: only 3/4 stages confirmed Injected
+  ramp episodes with !=4 injected stages: 1
+== 3. quiet gaps ==
+  n=20 min=8.6 max=42.1 mean=17.8 (floor must be >=8 except final cutoff)
+== 4. heartbeat anomalies (pods<12) ==
+  3 of 650 heartbeats; times: ['04:01:53', '06:28:47', '08:21:11']
+    04:01:53 -> during ep8 (cart-mem-ramp)
+    06:28:47 -> during ep13 (cart-mem-ramp)
+    08:21:11 -> during ep16 (cart-mem-ramp)
+== 5. restart accounting ==
+  stylehub-ad-service-788db94f98-967tp          restarts=4 last=Unknown@2026-08-18T20:11:54Z
+  stylehub-cart-service-784f8d4f89-6rqz2        restarts=13 last=OOMKilled@2026-08-19T09:55:05Z
+  stylehub-checkout-service-58b965764d-gcdms    restarts=4 last=Completed@2026-08-18T20:08:28Z
+  stylehub-currency-service-5fd58b7b88-ctlcb    restarts=4 last=Completed@2026-08-18T20:08:28Z
+  stylehub-email-service-6c9c9765d7-8t4nz       restarts=4 last=Completed@2026-08-18T20:08:28Z
+  stylehub-frontend-6b59789769-mmmv4            restarts=4 last=Unknown@2026-08-18T20:11:54Z
+  stylehub-payment-service-5994f57b49-l2tpw     restarts=4 last=Completed@2026-08-18T20:08:28Z
+  stylehub-product-catalog-service-8686964d5d-kdw9b restarts=4 last=Unknown@2026-08-18T20:11:54Z
+  stylehub-recommendation-service-849f9d7599-b7w8m restarts=4 last=Completed@2026-08-18T20:08:28Z
+  stylehub-redis-5bfd6567fb-qxjfm               restarts=4 last=Completed@2026-08-18T20:08:27Z
+  stylehub-shipping-service-667fcf977f-8rn9h    restarts=4 last=Unknown@2026-08-18T20:11:54Z
+  traffic-generator-7cf9679465-hrm45            restarts=4 last=Unknown@2026-08-18T20:11:54Z
+  expected: cart restarts ~= 8 (one OOMKill per cart-mem episode)
+== 6. Prometheus cross-check: last redis-delay episode ==
+  ep17 08:47:01-09:02:12 — cart avg latency per stage:
+    stage 1 (delay 150ms ): 104 ms
+    stage 2 (delay 400ms ): 370 ms
+    stage 3 (delay 900ms ): 805 ms
+    stage 4 (delay 1600ms): 2622 ms
+== 7. Prometheus cross-check: last cart-mem episode ==
+  ep19 — cart working set per stage (expect ~157/202/248MiB then OOM drop):
+    stage 1: 159 MiB
+    stage 2: 205 MiB
+    stage 3: 251 MiB
+    stage 4: 157 MiB
+== AUDIT COMPLETE ==

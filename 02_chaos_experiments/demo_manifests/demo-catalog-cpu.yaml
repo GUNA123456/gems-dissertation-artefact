@@ -1,0 +1,73 @@
+
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: catalog-cpu-ramp
+  namespace: default
+spec:
+  entry: ramp
+  templates:
+    - name: ramp
+      templateType: Serial
+      deadline: 13m
+      children:
+        - cpu-stage-1
+        - cpu-stage-2
+        - cpu-stage-3
+        - cpu-stage-4
+    - name: cpu-stage-1
+      templateType: StressChaos
+      deadline: 3m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 1
+            load: 30
+    - name: cpu-stage-2
+      templateType: StressChaos
+      deadline: 3m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 1
+            load: 70
+    - name: cpu-stage-3
+      templateType: StressChaos
+      deadline: 3m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 2
+            load: 90
+    - name: cpu-stage-4
+      templateType: StressChaos
+      deadline: 3m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - default
+          labelSelectors:
+            app: stylehub-product-catalog-service
+        stressors:
+          cpu:
+            workers: 3
+            load: 100

@@ -1,0 +1,191 @@
+# StyleHub Microservices Suite - Unified Kubernetes Deployment
+# Custom 100% Original Python & Node.js Microservices Kubernetes Manifests
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-catalog-service
+  template:
+    metadata:
+      labels:
+        app: product-catalog-service
+    spec:
+      containers:
+        - name: product-catalog-service
+          image: stylehub/product-catalog-service:latest
+          ports:
+            - containerPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog-service
+spec:
+  type: ClusterIP
+  selector:
+    app: product-catalog-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      containers:
+        - name: cart-service
+          image: stylehub/cart-service:latest
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          ports:
+            - containerPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: cart-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout-service
+  template:
+    metadata:
+      labels:
+        app: checkout-service
+    spec:
+      containers:
+        - name: checkout-service
+          image: stylehub/checkout-service:latest
+          env:
+            - name: CART_SERVICE_URL
+              value: "http://cart-service:8082"
+            - name: SHIPPING_SERVICE_URL
+              value: "http://shipping-service:8086"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:8088"
+            - name: EMAIL_SERVICE_URL
+              value: "http://email-service:8087"
+            - name: PRODUCT_CATALOG_SERVICE_URL
+              value: "http://product-catalog-service:8081"
+          ports:
+            - containerPort: 8089
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-service
+spec:
+  type: ClusterIP
+  selector:
+    app: checkout-service
+  ports:
+    - port: 8089
+      targetPort: 8089
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: stylehub/frontend:latest
+          env:
+            - name: PRODUCT_CATALOG_SERVICE_URL
+              value: "http://product-catalog-service:8081"
+            - name: CART_SERVICE_URL
+              value: "http://cart-service:8082"
+            - name: CURRENCY_SERVICE_URL
+              value: "http://currency-service:8083"
+            - name: RECOMMENDATION_SERVICE_URL
+              value: "http://recommendation-service:8084"
+            - name: AD_SERVICE_URL
+              value: "http://ad-service:8085"
+            - name: CHECKOUT_SERVICE_URL
+              value: "http://checkout-service:8089"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 8080

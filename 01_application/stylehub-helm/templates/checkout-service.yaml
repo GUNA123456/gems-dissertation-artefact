@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-checkout-service
+  labels:
+    app: {{ .Release.Name }}-checkout-service
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-checkout-service
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ .Values.microservices.checkout.port }}"
+      labels:
+        app: {{ .Release.Name }}-checkout-service
+    spec:
+      containers:
+        - name: checkout-service
+          image: "{{ .Values.image.repositoryPrefix }}/checkout-service:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.checkout.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.microservices.checkout.port }}
+            initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
+          env:
+            {{- if .Values.otel.endpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otel.endpoint | quote }}
+            {{- end }}
+            - name: CART_SERVICE_URL
+              value: "http://{{ .Release.Name }}-cart-service.default.svc.cluster.local:{{ .Values.microservices.cart.port }}"
+            - name: SHIPPING_SERVICE_URL
+              value: "http://{{ .Release.Name }}-shipping-service.default.svc.cluster.local:{{ .Values.microservices.shipping.port }}"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://{{ .Release.Name }}-payment-service.default.svc.cluster.local:{{ .Values.microservices.payment.port }}"
+            - name: EMAIL_SERVICE_URL
+              value: "http://{{ .Release.Name }}-email-service.default.svc.cluster.local:{{ .Values.microservices.email.port }}"
+            - name: PRODUCT_CATALOG_SERVICE_URL
+              value: "http://{{ .Release.Name }}-product-catalog-service.default.svc.cluster.local:{{ .Values.microservices.productCatalog.port }}"
+            # Phase 2: checkout->currency edge (order-total conversion; USD fallback reported)
+            - name: CURRENCY_SERVICE_URL
+              value: "http://{{ .Release.Name }}-currency-service.default.svc.cluster.local:{{ .Values.microservices.currency.port }}"
+            # Required by depgraph.py — must match NODE_MAP in extract_telemetry.py, otherwise
+            # checkout's four outbound edges are published as source="unknown" and dropped.
+            - name: SERVICE_NAME
+              value: "{{ .Release.Name }}-checkout-service"
+          ports:
+            - containerPort: {{ .Values.microservices.checkout.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-checkout-service
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Release.Name }}-checkout-service
+  ports:
+    - port: {{ .Values.microservices.checkout.port }}
+      targetPort: {{ .Values.microservices.checkout.port }}
