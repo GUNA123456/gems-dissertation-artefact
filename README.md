@@ -4,10 +4,8 @@
 MSc Major Project · COMP40321 · Gunadeep Pesari · Nottingham Trent University
 
 Submission artefact: the project's code, datasets and experiment evidence.
-Folders `01`–`09` mirror the submission zip exactly. The dissertation document
+Folders `01`–`07` mirror the submission zip exactly. The dissertation document
 is a separate deliverable and is not in this repository.
-
-**[EVIDENCE.md](EVIDENCE.md) maps every headline claim to the file that proves it.**
 
 ## Layout
 
@@ -19,9 +17,7 @@ is a separate deliverable and is not in this repository.
 | `04_model_and_serving/` | GCN-LSTM trainers, live/replay monitor, Grafana dashboard-as-code, ablations, checkpoints |
 | `05_datasets/` | The labelled datasets for the collection runs |
 | `06_experiment_evidence/` | Ground-truth chaos logs, audit reports, live-fire tick logs — verbatim |
-| `07_methodology_documents/` | The pre-registration paper-trail: plans written before runs, scorecards after — including one refuted expectation — plus the demo run sheets |
-| `08_infrastructure/` | Monitoring stack (see its README for versions), traffic generator, architecture diagram |
-| `09_screenshots/` | Original unedited captures of the running system (shot list in its README) |
+| `07_infrastructure/` | Monitoring stack (see its README for versions), traffic generator, architecture diagram |
 
 ## Monitoring stack
 
@@ -29,7 +25,7 @@ Prometheus (30 s scrape, 21-day retention) is the primary datastore — every
 dataset is an extract from it. Pushgateway carries traffic-probe and live
 prediction metrics; Grafana renders the live dashboard (built as code);
 Jaeger collects traces; Chaos Mesh 2.8.3 injects the faults. Deployed
-versions and Helm values: [`08_infrastructure/README.md`](08_infrastructure/README.md).
+versions and Helm values: [`07_infrastructure/README.md`](07_infrastructure/README.md).
 
 ## Key results
 
