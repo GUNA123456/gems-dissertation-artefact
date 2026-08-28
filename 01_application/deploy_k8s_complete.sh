@@ -16,7 +16,7 @@ echo "📊 Deploying Prometheus Monitoring Stack..."
 helm install prometheus prometheus-community/prometheus -n monitoring --create-namespace
 
 echo "📈 Deploying Grafana Dashboard..."
-kubectl apply -f "/Users/gunadeep/second brain/01_Projects_Manual/GEMS_Model_Sandbox/grafana-datasources-configmap.yaml"
-kubectl apply -f "/Users/gunadeep/second brain/01_Projects_Manual/GEMS_Model_Sandbox/grafana-deployment.yaml"
+kubectl apply -f ../07_infrastructure/grafana-datasources-configmap.yaml
+kubectl apply -f ../07_infrastructure/grafana-deployment.yaml
 
 echo "🎉 Complete Kubernetes Environment Successfully Deployed!"

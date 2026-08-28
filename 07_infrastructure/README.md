@@ -26,6 +26,10 @@ server:
 
 Files in this folder:
 
+- `grafana-deployment.yaml` + `grafana-datasources-configmap.yaml` — Grafana
+  deployment applied by `01_application/deploy_k8s_complete.sh` (the
+  datasource points at the in-cluster Prometheus; the dashboard itself is
+  then built as code by `04_model_and_serving/build_dashboard.py`).
 - `prometheus-nodeport.yaml` — pins Prometheus on `:30900` in a Service Helm
   does not own (a `helm upgrade` once reverted the hand-patched NodePort;
   this survives upgrades).
