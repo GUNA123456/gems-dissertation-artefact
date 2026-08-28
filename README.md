@@ -4,20 +4,32 @@
 MSc Major Project · COMP40321 · Gunadeep Pesari · Nottingham Trent University
 
 Submission artefact: the project's code, datasets and experiment evidence.
-Folders `01`–`07` mirror the submission zip exactly. The dissertation document
+Folders `01`–`09` mirror the submission zip exactly. The dissertation document
 is a separate deliverable and is not in this repository.
+
+**[EVIDENCE.md](EVIDENCE.md) maps every headline claim to the file that proves it.**
 
 ## Layout
 
 | Folder | Contents |
 |---|---|
 | `01_application/` | StyleHub testbed — 10 microservices + Redis, an 11-node dependency graph |
-| `02_chaos_experiments/` | Chaos scheduler, run audits, ramped fault manifests (light/standard/heavy) |
+| `02_chaos_experiments/` | Chaos Mesh scheduler, run audits, ramped fault manifests (light/standard/heavy) |
 | `03_data_pipeline/` | Feature extraction from Prometheus and v2.1 SLO labelling (`extract_v2.py`) |
-| `04_model_and_serving/` | GCN-LSTM trainers, live/replay monitor, ablations, model checkpoints |
+| `04_model_and_serving/` | GCN-LSTM trainers, live/replay monitor, Grafana dashboard-as-code, ablations, checkpoints |
 | `05_datasets/` | The labelled datasets for the collection runs |
 | `06_experiment_evidence/` | Ground-truth chaos logs, audit reports, live-fire tick logs — verbatim |
-| `07_infrastructure/` | Prometheus, Jaeger and traffic-generator manifests |
+| `07_methodology_documents/` | The pre-registration paper-trail: plans written before runs, scorecards after — including one refuted expectation — plus the demo run sheets |
+| `08_infrastructure/` | Monitoring stack (see its README for versions), traffic generator, architecture diagram |
+| `09_screenshots/` | Original unedited captures of the running system (shot list in its README) |
+
+## Monitoring stack
+
+Prometheus (30 s scrape, 21-day retention) is the primary datastore — every
+dataset is an extract from it. Pushgateway carries traffic-probe and live
+prediction metrics; Grafana renders the live dashboard (built as code);
+Jaeger collects traces; Chaos Mesh 2.8.3 injects the faults. Deployed
+versions and Helm values: [`08_infrastructure/README.md`](08_infrastructure/README.md).
 
 ## Key results
 
