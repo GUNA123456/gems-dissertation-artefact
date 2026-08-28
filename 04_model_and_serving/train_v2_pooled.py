@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
 """Step 4 pooled trainer: multiple collection nights, one model.
 
-Same recipe as train_v2.py (seed, half-size net, capped pos_weight, val-AUROC
-early stop) — deliberately unchanged so pooling is the only new variable.
-Differences forced by pooling, all pre-registered in Step4_Collection_Design:
 
-  * windows never span a dataset boundary (each night is its own timeline);
-  * the temporal 70/15/15 split is applied PER NIGHT, then pooled — so every
-    night contributes to train, val and test, and test stays strictly after
-    train within each night;
-  * pod-kill episodes are excluded from ALL samples by scenario NAME (the
-    Step-2 pre-registration: precursor-free label noise; demo-only scenario);
-  * normalization bounds fit on the union of the nights' training portions;
-  * scenario indices differ across datasets — mapping is always BY NAME via
-    each dataset's meta.scenarios, never by raw index.
 """
 
 import argparse
