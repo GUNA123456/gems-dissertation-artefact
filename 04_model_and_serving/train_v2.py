@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
-"""v2 trainer: cascade prediction on the overnight-run dataset.
 
-Task (the v2 formulation): given the last seq_len (12) steps of the whole
-graph, predict for EVERY node whether it will breach its SLO within the next
-lookahead (12) steps, and name the injected root-cause service.
-
-What changed from train_gnn.py, and what deliberately did not:
-  * backbone identical — same GCNLayer, same per-node LSTM, same adjacency
-    normalization, same per-feature-global normalization (fitted on the
-    TRAINING portion only, saved with the checkpoint);
-  * the graph-level binary head is now a PER-NODE breach head (victims are
-    per-service, not global), and the localizer head is trained against the
-    scheduler's ground-truth target (the cause);
-  * the split is TEMPORAL: first 70% of the night trains, next 15% validates,
-    last 15% tests; a sample whose full extent [t-seq_len+1, t+lookahead]
-    crosses a boundary is dropped. Round 1's random split had 96.4% of test
-    windows overlapping training windows and measured memorisation.
-
-Baselines evaluated on the identical test samples:
-  * static-threshold: per-node latency threshold tuned on training-split quiet
-    periods (p99.5 x 1.2 — same recipe as Round 1's tuned monitor), used as a
-    score for AUROC and as an alarm for lead time, with its firing rate audited;
-  * persistence: "a node breaching now will breach soon" — the naive forecast.
-
-Lead-time protocol (offline race on test episodes): alarm threshold chosen on
-VALIDATION quiet steps for <=1 false alarm per hour, then on each test episode
-compare first model alarm vs first actual breach vs static-monitor alarm.
-"""
 
 import argparse
 import json
